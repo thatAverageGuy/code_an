@@ -56,18 +56,6 @@ To analyze a local project:
 python webapp.py
 ```
 
-2. Use the `/upload` endpoint to upload a zip file containing your Python project.
-
-To analyze a GitHub repository:
-
-1. Start the Flask server:
-
-```
-python webapp.py
-```
-
-2. Use the `/github` endpoint to provide the GitHub repository URL.
-
 ## API Endpoints
 
 - `/upload` (POST): Upload a zip file containing a Python project for analysis.
