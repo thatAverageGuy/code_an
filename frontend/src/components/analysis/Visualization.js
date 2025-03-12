@@ -1,11 +1,11 @@
-import React, { useState, useEffect } from 'react';
-import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import React, { useState } from 'react';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import * as d3 from 'd3';
 import Loader from '../common/Loader';
 
 const Visualization = ({ analysisResults }) => {
   const [selectedView, setSelectedView] = useState('dependencies');
-  const [loading, setLoading] = useState(false);
+  const [loading] = useState(false);
   
   if (!analysisResults || !analysisResults.structure) {
     return <div className="no-data">No analysis data available for visualization</div>;
@@ -336,113 +336,113 @@ const ForceDirectedGraph = ({ nodes, links }) => {
   return <svg ref={svgRef} className="dependency-graph-svg"></svg>;
 };
 
-// BarChart Component (simplified version for module visualization)
-const BarChart = ({ data, width = 600, height = 400 }) => {
-  const chartRef = React.useRef(null);
-  
-  React.useEffect(() => {
-    if (!data || data.length === 0) return;
+// eslint-disable-next-line no-unused-vars
+const ModuleBarChart = ({ data, width = 600, height = 400 }) => {
+    const chartRef = React.useRef(null);
     
-    // Clear previous chart
-    d3.select(chartRef.current).selectAll("*").remove();
-    
-    const margin = { top: 20, right: 30, bottom: 40, left: 40 };
-    const innerWidth = width - margin.left - margin.right;
-    const innerHeight = height - margin.top - margin.bottom;
-    
-    // Create the SVG
-    const svg = d3.select(chartRef.current)
-      .attr("width", width)
-      .attr("height", height);
-    
-    const g = svg.append("g")
-      .attr("transform", `translate(${margin.left},${margin.top})`);
-    
-    // Scales
-    const x = d3.scaleBand()
-      .domain(data.map(d => d.name))
-      .range([0, innerWidth])
-      .padding(0.1);
-    
-    const y = d3.scaleLinear()
-      .domain([0, d3.max(data, d => Math.max(d.functions, d.classes, d.imports))])
-      .nice()
-      .range([innerHeight, 0]);
-    
-    // X axis
-    g.append("g")
-      .attr("transform", `translate(0,${innerHeight})`)
-      .call(d3.axisBottom(x))
-      .selectAll("text")
-        .attr("transform", "rotate(-45)")
-        .attr("text-anchor", "end");
-    
-    // Y axis
-    g.append("g")
-      .call(d3.axisLeft(y));
-    
-    // Functions bars
-    g.selectAll(".bar-functions")
-      .data(data)
-      .enter().append("rect")
-        .attr("class", "bar-functions")
-        .attr("x", d => x(d.name))
-        .attr("y", d => y(d.functions))
-        .attr("width", x.bandwidth() / 3)
-        .attr("height", d => innerHeight - y(d.functions))
-        .attr("fill", "#8884d8");
-    
-    // Classes bars
-    g.selectAll(".bar-classes")
-      .data(data)
-      .enter().append("rect")
-        .attr("class", "bar-classes")
-        .attr("x", d => x(d.name) + x.bandwidth() / 3)
-        .attr("y", d => y(d.classes))
-        .attr("width", x.bandwidth() / 3)
-        .attr("height", d => innerHeight - y(d.classes))
-        .attr("fill", "#82ca9d");
-    
-    // Imports bars
-    g.selectAll(".bar-imports")
-      .data(data)
-      .enter().append("rect")
-        .attr("class", "bar-imports")
-        .attr("x", d => x(d.name) + 2 * x.bandwidth() / 3)
-        .attr("y", d => y(d.imports))
-        .attr("width", x.bandwidth() / 3)
-        .attr("height", d => innerHeight - y(d.imports))
-        .attr("fill", "#ffc658");
-    
-    // Legend
-    const legend = svg.append("g")
-      .attr("transform", `translate(${width - 120},20)`);
-    
-    const legendData = [
-      { name: "Functions", color: "#8884d8" },
-      { name: "Classes", color: "#82ca9d" },
-      { name: "Imports", color: "#ffc658" }
-    ];
-    
-    legendData.forEach((item, i) => {
-      const legendRow = legend.append("g")
-        .attr("transform", `translate(0, ${i * 20})`);
+    React.useEffect(() => {
+      if (!data || data.length === 0) return;
       
-      legendRow.append("rect")
-        .attr("width", 10)
-        .attr("height", 10)
-        .attr("fill", item.color);
+      // Clear previous chart
+      d3.select(chartRef.current).selectAll("*").remove();
       
-      legendRow.append("text")
-        .attr("x", 15)
-        .attr("y", 10)
-        .text(item.name)
-        .style("font-size", "12px");
-    });
+      const margin = { top: 20, right: 30, bottom: 40, left: 40 };
+      const innerWidth = width - margin.left - margin.right;
+      const innerHeight = height - margin.top - margin.bottom;
+      
+      // Create the SVG
+      const svg = d3.select(chartRef.current)
+        .attr("width", width)
+        .attr("height", height);
+      
+      const g = svg.append("g")
+        .attr("transform", `translate(${margin.left},${margin.top})`);
+      
+      // Scales
+      const x = d3.scaleBand()
+        .domain(data.map(d => d.name))
+        .range([0, innerWidth])
+        .padding(0.1);
+      
+      const y = d3.scaleLinear()
+        .domain([0, d3.max(data, d => Math.max(d.functions, d.classes, d.imports))])
+        .nice()
+        .range([innerHeight, 0]);
+      
+      // X axis
+      g.append("g")
+        .attr("transform", `translate(0,${innerHeight})`)
+        .call(d3.axisBottom(x))
+        .selectAll("text")
+          .attr("transform", "rotate(-45)")
+          .attr("text-anchor", "end");
+      
+      // Y axis
+      g.append("g")
+        .call(d3.axisLeft(y));
+      
+      // Functions bars
+      g.selectAll(".bar-functions")
+        .data(data)
+        .enter().append("rect")
+          .attr("class", "bar-functions")
+          .attr("x", d => x(d.name))
+          .attr("y", d => y(d.functions))
+          .attr("width", x.bandwidth() / 3)
+          .attr("height", d => innerHeight - y(d.functions))
+          .attr("fill", "#8884d8");
+      
+      // Classes bars
+      g.selectAll(".bar-classes")
+        .data(data)
+        .enter().append("rect")
+          .attr("class", "bar-classes")
+          .attr("x", d => x(d.name) + x.bandwidth() / 3)
+          .attr("y", d => y(d.classes))
+          .attr("width", x.bandwidth() / 3)
+          .attr("height", d => innerHeight - y(d.classes))
+          .attr("fill", "#82ca9d");
+      
+      // Imports bars
+      g.selectAll(".bar-imports")
+        .data(data)
+        .enter().append("rect")
+          .attr("class", "bar-imports")
+          .attr("x", d => x(d.name) + 2 * x.bandwidth() / 3)
+          .attr("y", d => y(d.imports))
+          .attr("width", x.bandwidth() / 3)
+          .attr("height", d => innerHeight - y(d.imports))
+          .attr("fill", "#ffc658");
+      
+      // Legend
+      const legend = svg.append("g")
+        .attr("transform", `translate(${width - 120},20)`);
+      
+      const legendData = [
+        { name: "Functions", color: "#8884d8" },
+        { name: "Classes", color: "#82ca9d" },
+        { name: "Imports", color: "#ffc658" }
+      ];
+      
+      legendData.forEach((item, i) => {
+        const legendRow = legend.append("g")
+          .attr("transform", `translate(0, ${i * 20})`);
+        
+        legendRow.append("rect")
+          .attr("width", 10)
+          .attr("height", 10)
+          .attr("fill", item.color);
+        
+        legendRow.append("text")
+          .attr("x", 15)
+          .attr("y", 10)
+          .text(item.name)
+          .style("font-size", "12px");
+      });
+      
+    }, [data, width, height]);
     
-  }, [data, width, height]);
-  
-  return <svg ref={chartRef}></svg>;
-};
+    return <svg ref={chartRef}></svg>;
+  };
 
 export default Visualization;
