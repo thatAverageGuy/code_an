@@ -1,15 +1,12 @@
 import os
-import json
 import uuid
-from typing import Dict, List, Any, Tuple, Optional
+from typing import Dict, List, Any, Optional
 from datetime import datetime
 
 from domain.analyzer import CodeAnalyzerStrategy, PythonAnalyzer
-from domain.visualizer import GraphVisualizerStrategy, NetworkXVisualizer, D3Visualizer
 from services.file_service import FileService
-from domain.entities import AnalysisResults, VisualizationInfo, FileAnalysis
+from domain.entities import AnalysisResults, FileAnalysis
 from utils.exceptions import AnalysisError
-from config import settings
 
 class AnalysisService:
     """
@@ -19,22 +16,13 @@ class AnalysisService:
     def __init__(self, file_service: FileService):
         self.file_service = file_service
         self.analyzers = {}
-        self.visualizers = {}
         
         # Register default analyzers
         self.register_analyzer("py", PythonAnalyzer())
-        
-        # Register default visualizers
-        self.register_visualizer("networkx", NetworkXVisualizer())
-        self.register_visualizer("d3", D3Visualizer())
     
     def register_analyzer(self, extension: str, analyzer: CodeAnalyzerStrategy):
         """Register a code analyzer for a specific file extension"""
         self.analyzers[extension] = analyzer
-    
-    def register_visualizer(self, name: str, visualizer: GraphVisualizerStrategy):
-        """Register a visualizer strategy"""
-        self.visualizers[name] = visualizer
 
     async def analyze_project(self, project_path: str) -> AnalysisResults:
         """

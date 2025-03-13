@@ -2,7 +2,7 @@ from fastapi import FastAPI, Depends
 from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
 
-from api.routes import upload, github, visualization
+from api.routes import upload, github
 from api.middleware import RequestLoggingMiddleware
 from config import settings
 
@@ -27,7 +27,6 @@ app.add_middleware(RequestLoggingMiddleware)
 # Include routers
 app.include_router(upload.router, prefix="/api/upload", tags=["Upload"])
 app.include_router(github.router, prefix="/api/github", tags=["GitHub"])
-app.include_router(visualization.router, prefix="/api/visualization", tags=["Visualization"])
 
 @app.get("/", tags=["Health"])
 async def root():

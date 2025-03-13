@@ -49,8 +49,7 @@ const formatDataForUI = (results) => {
   
   return {
     stats,
-    fileCount: results.files_analyzed,
-    hasLLMInsights: results.llm_analysis && Object.keys(results.llm_analysis).length > 0
+    fileCount: results.files_analyzed
   };
 };
 

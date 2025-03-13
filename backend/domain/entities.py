@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field, HttpUrl
-from typing import Dict, List, Optional, Any, Union
+from typing import Dict, List, Optional, Any
 from datetime import datetime
 
 # Request models
@@ -18,6 +18,8 @@ class GithubAnalysisRequest(BaseModel):
         }
 
 class AnalysisOptions(BaseModel):
+    visualization_type: str = "networkx"
+    
     class Config:
         schema_extra = {
             "example": {
