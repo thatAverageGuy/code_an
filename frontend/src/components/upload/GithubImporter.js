@@ -4,7 +4,6 @@ import { analyzeGithubRepo } from '../../services/api';
 const GithubImporter = ({ onAnalysisComplete, onAnalysisError, onLoading }) => {
   const [githubUrl, setGithubUrl] = useState('');
   const [branch, setBranch] = useState('main');
-  const [useLLM, setUseLLM] = useState(false);
   
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -18,7 +17,6 @@ const GithubImporter = ({ onAnalysisComplete, onAnalysisError, onLoading }) => {
       onLoading(true);
       
       const options = {
-        use_llm: useLLM,
         branch: branch
       };
       
@@ -54,17 +52,6 @@ const GithubImporter = ({ onAnalysisComplete, onAnalysisError, onLoading }) => {
             onChange={(e) => setBranch(e.target.value)}
             placeholder="main"
           />
-        </div>
-
-        <div className="options">
-          <label>
-            <input
-              type="checkbox"
-              checked={useLLM}
-              onChange={(e) => setUseLLM(e.target.checked)}
-            />
-            Use LLM for enhanced analysis
-          </label>
         </div>
 
         <button 

@@ -3,153 +3,55 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Responsive
 import * as d3 from 'd3';
 import Loader from '../common/Loader';
 
-const Visualization = ({ analysisResults }) => {
+const Visualization = ({ rawData }) => {
   const [selectedView, setSelectedView] = useState('dependencies');
-  const [loading] = useState(false);
+  const [loading, setLoading] = useState(false);
   
-  if (!analysisResults || !analysisResults.structure) {
-    return <div className="no-data">No analysis data available for visualization</div>;
+  if (!rawData || !rawData.nodes) {
+    return <div className="no-data">No visualization data available</div>;
   }
   
   const renderDependencyGraph = () => {
-    // Convert analysis results to nodes and links
-    const structure = analysisResults.structure;
-    const nodes = [];
-    const links = [];
-    const nodeMap = {};
-    let nodeId = 0;
-    
-    // Process each file's functions and their calls
-    Object.entries(structure).forEach(([filePath, fileData]) => {
-      const fileName = filePath.split('/').pop();
-      
-      // Add file as node
-      const fileNodeId = `file-${nodeId}`;
-      nodes.push({
-        id: fileNodeId,
-        name: fileName,
-        type: 'file',
-        size: 15
-      });
-      nodeMap[fileName] = fileNodeId;
-      nodeId++;
-      
-      // Process functions
-      Object.entries(fileData.functions || {}).forEach(([funcName, funcData]) => {
-        const funcNodeId = `func-${nodeId}`;
-        nodes.push({
-          id: funcNodeId,
-          name: funcName,
-          type: 'function',
-          file: fileName,
-          size: 10
-        });
-        nodeMap[`${fileName}.${funcName}`] = funcNodeId;
-        nodeId++;
-        
-        // Link function to file
-        links.push({
-          source: fileNodeId,
-          target: funcNodeId,
-          type: 'contains'
-        });
-        
-        // Add function calls as links
-        (funcData.calls || []).forEach(calledFunc => {
-          // Try to find the called function in our nodes
-          Object.entries(structure).forEach(([otherFile, otherData]) => {
-            const otherFileName = otherFile.split('/').pop();
-            if (otherData.functions && otherData.functions[calledFunc]) {
-              const targetNodeId = nodeMap[`${otherFileName}.${calledFunc}`];
-              if (targetNodeId) {
-                links.push({
-                  source: funcNodeId,
-                  target: targetNodeId,
-                  type: 'calls'
-                });
-              }
-            }
-          });
-        });
-      });
-      
-      // Process classes
-      Object.entries(fileData.classes || {}).forEach(([className, classData]) => {
-        const classNodeId = `class-${nodeId}`;
-        nodes.push({
-          id: classNodeId,
-          name: className,
-          type: 'class',
-          file: fileName,
-          size: 12
-        });
-        nodeMap[`${fileName}.${className}`] = classNodeId;
-        nodeId++;
-        
-        // Link class to file
-        links.push({
-          source: fileNodeId,
-          target: classNodeId,
-          type: 'contains'
-        });
-        
-        // Add inheritance relationships
-        (classData.bases || []).forEach(baseClass => {
-          // Try to find the base class in our nodes
-          Object.entries(structure).forEach(([otherFile, otherData]) => {
-            const otherFileName = otherFile.split('/').pop();
-            if (otherData.classes && otherData.classes[baseClass]) {
-              const targetNodeId = nodeMap[`${otherFileName}.${baseClass}`];
-              if (targetNodeId) {
-                links.push({
-                  source: classNodeId,
-                  target: targetNodeId,
-                  type: 'inherits'
-                });
-              }
-            }
-          });
-        });
-      });
-    });
-    
     return (
       <div className="dependency-graph">
-        <ForceDirectedGraph nodes={nodes} links={links} />
+        <ForceDirectedGraph nodes={rawData.nodes} links={rawData.links} />
       </div>
     );
   };
   
   const renderModuleStructure = () => {
-    const structure = analysisResults.structure;
+    // Process data for module structure chart
     const moduleData = [];
     
-    // Count items by directory/module
-    const moduleCounts = {};
-    
-    Object.keys(structure).forEach(filePath => {
-      const parts = filePath.split('/');
-      const moduleName = parts.length > 1 ? parts[parts.length - 2] : 'root';
-      
-      if (!moduleCounts[moduleName]) {
-        moduleCounts[moduleName] = {
-          name: moduleName,
-          files: 0,
-          functions: 0,
-          classes: 0,
-          imports: 0
-        };
+    // Group by module
+    const moduleGroups = {};
+    for (const node of rawData.nodes) {
+      if (node.path) {
+        // Extract module path
+        const parts = node.path.split('/');
+        const modulePath = parts.length > 1 ? parts.slice(0, -1).join('/') : 'root';
+        
+        if (!moduleGroups[modulePath]) {
+          moduleGroups[modulePath] = {
+            name: modulePath,
+            files: 0,
+            functions: 0,
+            classes: 0
+          };
+        }
+        
+        if (node.type === 'file') {
+          moduleGroups[modulePath].files++;
+        } else if (node.type === 'function') {
+          moduleGroups[modulePath].functions++;
+        } else if (node.type === 'class') {
+          moduleGroups[modulePath].classes++;
+        }
       }
-      
-      const fileData = structure[filePath];
-      moduleCounts[moduleName].files++;
-      moduleCounts[moduleName].functions += Object.keys(fileData.functions || {}).length;
-      moduleCounts[moduleName].classes += Object.keys(fileData.classes || {}).length;
-      moduleCounts[moduleName].imports += Object.keys(fileData.imports || {}).length;
-    });
+    }
     
     // Convert to array for chart
-    Object.values(moduleCounts).forEach(module => {
+    Object.values(moduleGroups).forEach(module => {
       moduleData.push(module);
     });
     
@@ -165,7 +67,7 @@ const Visualization = ({ analysisResults }) => {
             <Legend />
             <Bar dataKey="functions" fill="#8884d8" name="Functions" />
             <Bar dataKey="classes" fill="#82ca9d" name="Classes" />
-            <Bar dataKey="imports" fill="#ffc658" name="Imports" />
+            <Bar dataKey="files" fill="#ffc658" name="Files" />
           </BarChart>
         </ResponsiveContainer>
       </div>
@@ -335,114 +237,5 @@ const ForceDirectedGraph = ({ nodes, links }) => {
   
   return <svg ref={svgRef} className="dependency-graph-svg"></svg>;
 };
-
-// eslint-disable-next-line no-unused-vars
-const ModuleBarChart = ({ data, width = 600, height = 400 }) => {
-    const chartRef = React.useRef(null);
-    
-    React.useEffect(() => {
-      if (!data || data.length === 0) return;
-      
-      // Clear previous chart
-      d3.select(chartRef.current).selectAll("*").remove();
-      
-      const margin = { top: 20, right: 30, bottom: 40, left: 40 };
-      const innerWidth = width - margin.left - margin.right;
-      const innerHeight = height - margin.top - margin.bottom;
-      
-      // Create the SVG
-      const svg = d3.select(chartRef.current)
-        .attr("width", width)
-        .attr("height", height);
-      
-      const g = svg.append("g")
-        .attr("transform", `translate(${margin.left},${margin.top})`);
-      
-      // Scales
-      const x = d3.scaleBand()
-        .domain(data.map(d => d.name))
-        .range([0, innerWidth])
-        .padding(0.1);
-      
-      const y = d3.scaleLinear()
-        .domain([0, d3.max(data, d => Math.max(d.functions, d.classes, d.imports))])
-        .nice()
-        .range([innerHeight, 0]);
-      
-      // X axis
-      g.append("g")
-        .attr("transform", `translate(0,${innerHeight})`)
-        .call(d3.axisBottom(x))
-        .selectAll("text")
-          .attr("transform", "rotate(-45)")
-          .attr("text-anchor", "end");
-      
-      // Y axis
-      g.append("g")
-        .call(d3.axisLeft(y));
-      
-      // Functions bars
-      g.selectAll(".bar-functions")
-        .data(data)
-        .enter().append("rect")
-          .attr("class", "bar-functions")
-          .attr("x", d => x(d.name))
-          .attr("y", d => y(d.functions))
-          .attr("width", x.bandwidth() / 3)
-          .attr("height", d => innerHeight - y(d.functions))
-          .attr("fill", "#8884d8");
-      
-      // Classes bars
-      g.selectAll(".bar-classes")
-        .data(data)
-        .enter().append("rect")
-          .attr("class", "bar-classes")
-          .attr("x", d => x(d.name) + x.bandwidth() / 3)
-          .attr("y", d => y(d.classes))
-          .attr("width", x.bandwidth() / 3)
-          .attr("height", d => innerHeight - y(d.classes))
-          .attr("fill", "#82ca9d");
-      
-      // Imports bars
-      g.selectAll(".bar-imports")
-        .data(data)
-        .enter().append("rect")
-          .attr("class", "bar-imports")
-          .attr("x", d => x(d.name) + 2 * x.bandwidth() / 3)
-          .attr("y", d => y(d.imports))
-          .attr("width", x.bandwidth() / 3)
-          .attr("height", d => innerHeight - y(d.imports))
-          .attr("fill", "#ffc658");
-      
-      // Legend
-      const legend = svg.append("g")
-        .attr("transform", `translate(${width - 120},20)`);
-      
-      const legendData = [
-        { name: "Functions", color: "#8884d8" },
-        { name: "Classes", color: "#82ca9d" },
-        { name: "Imports", color: "#ffc658" }
-      ];
-      
-      legendData.forEach((item, i) => {
-        const legendRow = legend.append("g")
-          .attr("transform", `translate(0, ${i * 20})`);
-        
-        legendRow.append("rect")
-          .attr("width", 10)
-          .attr("height", 10)
-          .attr("fill", item.color);
-        
-        legendRow.append("text")
-          .attr("x", 15)
-          .attr("y", 10)
-          .text(item.name)
-          .style("font-size", "12px");
-      });
-      
-    }, [data, width, height]);
-    
-    return <svg ref={chartRef}></svg>;
-  };
 
 export default Visualization;

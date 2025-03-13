@@ -14,10 +14,6 @@ class AnalysisError(BaseServiceError):
     """Exception raised for errors in code analysis"""
     pass
 
-class LLMServiceError(BaseServiceError):
-    """Exception raised for errors in LLM service"""
-    pass
-
 class StorageError(BaseServiceError):
     """Exception raised for errors in storage operations"""
     pass

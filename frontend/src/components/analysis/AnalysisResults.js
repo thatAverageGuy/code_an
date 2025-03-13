@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import CodeStructure from './CodeStructure';
-import LLMInsights from './LLMInsights';
 import Visualization from './Visualization';
 
 const AnalysisResults = ({ results }) => {
@@ -39,14 +38,6 @@ const AnalysisResults = ({ results }) => {
         >
           Visualization
         </button>
-        {results.llm_analysis && (
-          <button
-            className={`tab-button ${activeTab === 'llm' ? 'active' : ''}`}
-            onClick={() => setActiveTab('llm')}
-          >
-            LLM Insights
-          </button>
-        )}
       </div>
 
       <div className="tab-content">
@@ -54,10 +45,7 @@ const AnalysisResults = ({ results }) => {
           <CodeStructure structure={results.structure} />
         )}
         {activeTab === 'visualization' && (
-          <Visualization visualizations={results.visualizations} />
-        )}
-        {activeTab === 'llm' && results.llm_analysis && (
-          <LLMInsights llmAnalysis={results.llm_analysis} />
+          <Visualization rawData={results.raw_data} />
         )}
       </div>
     </div>

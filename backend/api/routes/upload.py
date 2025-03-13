@@ -4,7 +4,6 @@ from typing import Optional
 
 from services.file_service import FileService
 from services.analysis_service import AnalysisService
-from services.llm_service import LLMService
 from domain.entities import AnalysisOptions, AnalysisResults, ErrorResponse
 from utils.exceptions import FileServiceError, AnalysisError
 from config import settings
@@ -13,8 +12,7 @@ router = APIRouter()
 
 def get_services():
     file_service = FileService()
-    llm_service = LLMService()
-    analysis_service = AnalysisService(file_service, llm_service)
+    analysis_service = AnalysisService(file_service)
     return file_service, analysis_service
 
 @router.post("/", response_model=AnalysisResults, responses={400: {"model": ErrorResponse}, 500: {"model": ErrorResponse}})
@@ -56,7 +54,6 @@ async def upload_project(
         # Analyze the project
         results = await analysis_service.analyze_project(
             extract_dir,
-            use_llm=options.use_llm,
             visualization_type=options.visualization_type
         )
         

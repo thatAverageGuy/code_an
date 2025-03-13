@@ -4,7 +4,6 @@ from typing import Optional
 from services.file_service import FileService
 from services.github_service import GithubService
 from services.analysis_service import AnalysisService
-from services.llm_service import LLMService
 from domain.entities import AnalysisOptions
 from infrastructure.anthropic_client import get_anthropic_client
 from infrastructure.storage import get_storage_service
@@ -12,15 +11,11 @@ from infrastructure.logging import get_logger
 
 # Common dependencies for FastAPI endpoints
 
-async def get_analysis_options(
-    use_llm: bool = Query(False, description="Whether to use LLM for enhanced analysis"),
-    visualization_type: str = Query("networkx", description="Type of visualization to generate")
-) -> AnalysisOptions:
+async def get_analysis_options() -> AnalysisOptions:
     """
     Get analysis options from query parameters
     """
     return AnalysisOptions(
-        use_llm=use_llm,
         visualization_type=visualization_type
     )
 
@@ -36,15 +31,9 @@ def get_github_service() -> GithubService:
     """
     return GithubService()
 
-def get_llm_service() -> LLMService:
-    """
-    Get LLMService instance
-    """
-    return LLMService()
 
 def get_analysis_service(
-    file_service: FileService = Depends(get_file_service),
-    llm_service: LLMService = Depends(get_llm_service)
+    file_service: FileService = Depends(get_file_service)
 ) -> AnalysisService:
     """
     Get AnalysisService instance with its dependencies

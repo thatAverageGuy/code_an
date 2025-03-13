@@ -1,10 +1,9 @@
 // API service for communicating with the backend
 const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000/api';
 
-export const uploadProject = async (file, options = { use_llm: false, visualization_type: 'networkx' }) => {
+export const uploadProject = async (file) => {
   const formData = new FormData();
   formData.append('file', file);
-  formData.append('options', JSON.stringify(options));
 
   const response = await fetch(`${API_URL}/upload`, {
     method: 'POST',
@@ -19,7 +18,7 @@ export const uploadProject = async (file, options = { use_llm: false, visualizat
   return response.json();
 };
 
-export const analyzeGithubRepo = async (githubUrl, options = { use_llm: false, branch: 'main' }) => {
+export const analyzeGithubRepo = async (githubUrl, options = { branch: 'main' }) => {
   const response = await fetch(`${API_URL}/github`, {
     method: 'POST',
     headers: {
@@ -27,7 +26,6 @@ export const analyzeGithubRepo = async (githubUrl, options = { use_llm: false, b
     },
     body: JSON.stringify({
       github_url: githubUrl,
-      use_llm: options.use_llm,
       branch: options.branch,
     }),
   });

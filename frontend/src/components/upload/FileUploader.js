@@ -3,8 +3,6 @@ import { uploadProject } from '../../services/api';
 
 const FileUploader = ({ onAnalysisComplete, onAnalysisError, onLoading }) => {
   const [file, setFile] = useState(null);
-  const [useLLM, setUseLLM] = useState(false);
-  const [visualizationType, setVisualizationType] = useState('networkx');
   const fileInputRef = useRef(null);
 
   const handleFileChange = (e) => {
@@ -46,13 +44,7 @@ const FileUploader = ({ onAnalysisComplete, onAnalysisError, onLoading }) => {
 
     try {
       onLoading(true);
-      
-      const options = {
-        use_llm: useLLM,
-        visualization_type: visualizationType
-      };
-      
-      const results = await uploadProject(file, options);
+      const results = await uploadProject(file);
       onAnalysisComplete(results);
     } catch (error) {
       onAnalysisError(error);
@@ -88,28 +80,6 @@ const FileUploader = ({ onAnalysisComplete, onAnalysisError, onLoading }) => {
           ) : (
             <p>Drag and drop a ZIP file here, or click to browse</p>
           )}
-        </div>
-
-        <div className="options">
-          <label>
-            <input
-              type="checkbox"
-              checked={useLLM}
-              onChange={(e) => setUseLLM(e.target.checked)}
-            />
-            Use LLM for enhanced analysis
-          </label>
-          
-          <div className="select-container">
-            <label>Visualization Type:</label>
-            <select
-              value={visualizationType}
-              onChange={(e) => setVisualizationType(e.target.value)}
-            >
-              <option value="networkx">NetworkX</option>
-              <option value="d3">D3.js</option>
-            </select>
-          </div>
         </div>
 
         <button 
