@@ -31,7 +31,7 @@ class AnalysisService:
         
         Args:
             file_path: The original file path
-            
+                
         Returns:
             Normalized path without temp directories
         """
@@ -40,24 +40,40 @@ class AnalysisService:
             file_path = file_path.replace('\\', '/')
         
         # Extract the relevant part of the path
-        # Remove temporary directory prefixes like /tmp/code_analyzer/github_clone_xxx/
+        # Remove temporary directory prefixes
         parts = file_path.split('/')
-        if len(parts) > 3 and ('tmp' in parts or 'temp' in parts or 'code_analyzer' in parts):
-            # Find the first actual project directory
-            # Skip tmp, code_analyzer, and unique IDs like github_clone_xxx
-            start_idx = 0
-            for i, part in enumerate(parts):
-                if 'github_clone_' in part or 'clone_' in part:
-                    start_idx = i + 1
-                    break
-            
-            # If we found a marker, remove everything before it
-            if start_idx > 0:
-                parts = parts[start_idx:]
-                return '/'.join(parts)
+        start_idx = 0
+        
+        # Look for temp directory markers
+        for i, part in enumerate(parts):
+            if part == 'tmp' or part == 'temp' or part == 'code_analyzer':
+                start_idx = i + 1
+            elif 'github_clone_' in part or 'clone_' in part or 'extract_dir_' in part:
+                start_idx = i + 1
+            elif part.startswith('tmp') and len(part) > 3 and '.' not in part:
+                # This catches temporary directories like tmp6cppe2mi
+                start_idx = i + 1
+        
+        # If we found markers, remove everything before it
+        if start_idx > 0 and start_idx < len(parts):
+            return '/'.join(parts[start_idx:])
+        
+        # If no markers were found, check for common patterns
+        common_prefixes = [
+            '/tmp/code_analyzer/',
+            'tmp/code_analyzer/',
+            '/tmp/',
+            'tmp/',
+            '/temp/',
+            'temp/'
+        ]
+        
+        for prefix in common_prefixes:
+            if file_path.startswith(prefix):
+                return file_path[len(prefix):]
         
         return file_path
-    
+
     def generate_file_summary(self, file_path: str, content: str) -> str:
         """
         Generate a summary of the file content based on file type

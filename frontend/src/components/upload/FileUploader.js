@@ -3,14 +3,21 @@ import { uploadProject } from '../../services/api';
 
 const FileUploader = ({ onAnalysisComplete, onAnalysisError, onLoading }) => {
   const [file, setFile] = useState(null);
+  const [isLargeFile, setIsLargeFile] = useState(false);
   const fileInputRef = useRef(null);
+
+  // Size limit for warning (10MB)
+  const SIZE_WARNING_LIMIT = 10 * 1024 * 1024;
 
   const handleFileChange = (e) => {
     const selectedFile = e.target.files[0];
     if (selectedFile && selectedFile.name.endsWith('.zip')) {
       setFile(selectedFile);
+      // Check if file is large and show warning
+      setIsLargeFile(selectedFile.size > SIZE_WARNING_LIMIT);
     } else {
       setFile(null);
+      setIsLargeFile(false);
       alert('Please select a valid ZIP file');
     }
   };
@@ -28,6 +35,8 @@ const FileUploader = ({ onAnalysisComplete, onAnalysisError, onLoading }) => {
       const droppedFile = e.dataTransfer.files[0];
       if (droppedFile.name.endsWith('.zip')) {
         setFile(droppedFile);
+        // Check if file is large and show warning
+        setIsLargeFile(droppedFile.size > SIZE_WARNING_LIMIT);
       } else {
         alert('Please drop a valid ZIP file');
       }
@@ -76,6 +85,11 @@ const FileUploader = ({ onAnalysisComplete, onAnalysisError, onLoading }) => {
             <div className="file-info">
               <p>Selected file: {file.name}</p>
               <p>Size: {(file.size / 1024 / 1024).toFixed(2)} MB</p>
+              {isLargeFile && (
+                <p className="warning">
+                  Warning: Large files may take longer to process due to base64 encoding.
+                </p>
+              )}
             </div>
           ) : (
             <p>Drag and drop a ZIP file here, or click to browse</p>
