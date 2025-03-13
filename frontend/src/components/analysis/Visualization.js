@@ -5,7 +5,7 @@ import Loader from '../common/Loader';
 
 const Visualization = ({ rawData }) => {
   const [selectedView, setSelectedView] = useState('dependencies');
-  const [loading, setLoading] = useState(false);
+  const [loading] = useState(false);
   
   if (!rawData || !rawData.nodes) {
     return <div className="no-data">No visualization data available</div>;
@@ -120,9 +120,41 @@ const ForceDirectedGraph = ({ nodes, links }) => {
     // Clear previous visualization
     d3.select(svgRef.current).selectAll("*").remove();
     
+    // Process links to ensure all referenced nodes exist
+    const nodeMap = new Map(nodes.map(node => [node.id, node]));
+    const unknownNodes = new Set();
+    
+    // Create nodes for unknown targets
+    links.forEach(link => {
+      if (typeof link.target === 'string' && link.target.startsWith('unknown:')) {
+        const targetName = link.targetName || link.target.split(':')[1];
+        if (!unknownNodes.has(link.target)) {
+          const unknownNode = {
+            id: link.target,
+            name: targetName,
+            type: "unknown",
+            // Add a visual indicator that this is an external/unknown node
+            unknown: true
+          };
+          nodes.push(unknownNode);
+          nodeMap.set(link.target, unknownNode);
+          unknownNodes.add(link.target);
+        }
+      }
+    });
+    
+    // Process links to ensure proper source/target format for D3
+    const processedLinks = links.map(link => {
+      return {
+        ...link,
+        source: typeof link.source === 'number' ? link.source : link.source,
+        target: typeof link.target === 'number' ? link.target : link.target
+      };
+    });
+    
     // Create the simulation
     const simulation = d3.forceSimulation(nodes)
-      .force("link", d3.forceLink(links).id(d => d.id).distance(100))
+      .force("link", d3.forceLink(processedLinks).id(d => d.id).distance(100))
       .force("charge", d3.forceManyBody().strength(-300))
       .force("center", d3.forceCenter(width / 2, height / 2))
       .force("collision", d3.forceCollide().radius(30));
@@ -155,7 +187,7 @@ const ForceDirectedGraph = ({ nodes, links }) => {
     // Create the links
     const link = svg.append("g")
       .selectAll("line")
-      .data(links)
+      .data(processedLinks)
       .enter().append("line")
         .attr("stroke", d => {
           if (d.type === "contains") return "#999";
@@ -163,6 +195,10 @@ const ForceDirectedGraph = ({ nodes, links }) => {
           return "#e53935";
         })
         .attr("stroke-width", 1.5)
+        .attr("stroke-dasharray", d => {
+          // Use dashed lines for links to unknown nodes
+          return (typeof d.target === 'string' && d.target.startsWith('unknown:')) ? "5,5" : null;
+        })
         .attr("marker-end", d => `url(#arrow-${d.type})`);
     
     // Create the nodes
@@ -177,8 +213,9 @@ const ForceDirectedGraph = ({ nodes, links }) => {
     
     // Node circles
     node.append("circle")
-      .attr("r", d => d.size || 5)
+      .attr("r", d => d.unknown ? 4 : (d.size || 5))
       .attr("fill", d => {
+        if (d.unknown) return "#aaaaaa"; // Gray for unknown nodes
         if (d.type === "file") return "#4caf50";
         if (d.type === "function") return "#2196f3";
         if (d.type === "class") return "#ff9800";
@@ -190,7 +227,15 @@ const ForceDirectedGraph = ({ nodes, links }) => {
       .attr("dx", 12)
       .attr("dy", ".35em")
       .text(d => d.name)
-      .style("font-size", "10px");
+      .style("font-size", "10px")
+      .style("font-style", d => d.unknown ? "italic" : "normal");
+    
+    // Add tooltips
+    node.append("title")
+      .text(d => {
+        if (d.unknown) return `External reference: ${d.name}`;
+        return `${d.type}: ${d.name}${d.path ? `\nPath: ${d.path}` : ''}`;
+      });
     
     // Update positions
     simulation.on("tick", () => {

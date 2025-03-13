@@ -15,8 +15,8 @@ const Header = () => {
               <Link to="/">Home</Link>
             </li>
             <li>
-              <a href="https://github.com/yourusername/code-analyzer" target="_blank" rel="noopener noreferrer">
-                GitHub
+              <a href="https://github.com/Shikha-code36/code_analyzer" target="_blank" rel="noopener noreferrer">
+                Source Code
               </a>
             </li>
           </ul>

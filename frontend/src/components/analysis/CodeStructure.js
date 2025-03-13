@@ -24,6 +24,24 @@ const CodeStructure = ({ structure }) => {
     setFilterType(e.target.value);
   };
 
+  const getFileTypeIcon = (filePath) => {
+    
+    // Return appropriate icon based on file type
+    if (filePath.endsWith('.py')) return '🐍';
+    if (filePath.endsWith('.js') || filePath.endsWith('.jsx')) return '📜';
+    if (filePath.endsWith('.html')) return '🌐';
+    if (filePath.endsWith('.css')) return '🎨';
+    if (filePath.endsWith('.md')) return '📝';
+    if (filePath.endsWith('.json')) return '⚙️';
+    if (filePath.endsWith('.gitignore') || filePath.includes('.git/')) return '📎';
+    if (filePath.endsWith('.txt')) return '📄';
+    if (filePath.endsWith('.sql') || filePath.includes('mydb') || filePath.includes('.db')) return '🗄️';
+    if (filePath.endsWith('.cnf') || filePath.endsWith('.conf') || filePath.endsWith('.config') || filePath.endsWith('.ini')) return '⚙️';
+    
+    // Default icon
+    return '📁';
+  };
+
   const filteredFiles = Object.entries(structure).filter(([filePath, fileData]) => {
     const matchesSearch = filePath.toLowerCase().includes(searchQuery);
     
@@ -32,6 +50,8 @@ const CodeStructure = ({ structure }) => {
     if (filterType === 'functions' && Object.keys(fileData.functions).length > 0) return matchesSearch;
     if (filterType === 'imports' && Object.keys(fileData.imports).length > 0) return matchesSearch;
     if (filterType === 'errors' && fileData.errors && fileData.errors.length > 0) return matchesSearch;
+    if (filterType === 'config' && (filePath.endsWith('.cnf') || filePath.endsWith('.conf') || filePath.includes('.git'))) return matchesSearch;
+    if (filterType === 'database' && (filePath.includes('db') || filePath.endsWith('.sql'))) return matchesSearch;
     
     return false;
   });
@@ -56,6 +76,8 @@ const CodeStructure = ({ structure }) => {
           <option value="classes">Files with Classes</option>
           <option value="functions">Files with Functions</option>
           <option value="imports">Files with Imports</option>
+          <option value="config">Configuration Files</option>
+          <option value="database">Database Files</option>
           <option value="errors">Files with Errors</option>
         </select>
       </div>
@@ -70,6 +92,7 @@ const CodeStructure = ({ structure }) => {
               <span className={`file-toggle ${expandedFiles[filePath] ? 'open' : ''}`}>
                 {expandedFiles[filePath] ? '▼' : '►'}
               </span>
+              <span className="file-icon">{getFileTypeIcon(filePath)}</span>
               <span className="file-path">{filePath}</span>
               <div className="file-stats">
                 <span>{Object.keys(fileData.classes).length} classes</span>
@@ -81,6 +104,16 @@ const CodeStructure = ({ structure }) => {
             
             {expandedFiles[filePath] && (
               <div className="file-details">
+                {/* File Summary Section */}
+                {fileData.summary && (
+                  <div className="section summary-section">
+                    <h4>Summary</h4>
+                    <div className="summary-content">
+                      {fileData.summary}
+                    </div>
+                  </div>
+                )}
+              
                 {fileData.errors && fileData.errors.length > 0 && (
                   <div className="section errors-section">
                     <h4>Errors</h4>

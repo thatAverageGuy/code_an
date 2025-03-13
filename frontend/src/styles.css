@@ -611,3 +611,65 @@
       display: none;
     }
   }
+
+/* File summary styles */
+.summary-section {
+  margin-bottom: 1.5rem;
+  background-color: #f8f9fa;
+  padding: 1rem;
+  border-radius: var(--border-radius);
+  border-left: 4px solid #4caf50;
+}
+
+.summary-section h4 {
+  color: #2c3e50;
+  margin-bottom: 0.5rem;
+  font-size: 1rem;
+}
+
+.summary-content {
+  font-size: 0.9rem;
+  line-height: 1.5;
+  white-space: pre-wrap;
+}
+
+/* File icon styles */
+.file-icon {
+  margin-right: 0.5rem;
+  font-size: 1.1rem;
+}
+
+/* Enhanced file header */
+.file-header {
+  display: flex;
+  align-items: center;
+  background-color: #f8f9fa;
+  padding: 0.75rem;
+  border-radius: var(--border-radius);
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.file-header:hover {
+  background-color: #e9ecef;
+}
+
+/* Config files */
+.file-item[data-type="config"] .file-header {
+  border-left: 3px solid #ff9800;
+}
+
+/* Database files */
+.file-item[data-type="database"] .file-header {
+  border-left: 3px solid #2196f3;
+}
+
+/* Document files */
+.file-item[data-type="document"] .file-header {
+  border-left: 3px solid #9c27b0;
+}
+
+/* Git files */
+.file-item[data-type="git"] .file-header {
+  border-left: 3px solid #795548;
+}

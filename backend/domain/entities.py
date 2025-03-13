@@ -49,6 +49,7 @@ class FileAnalysis(BaseModel):
     functions: Dict[str, Dict[str, Any]] = {}
     classes: Dict[str, Dict[str, Any]] = {}
     errors: Optional[List[str]] = None
+    summary: Optional[str] = None  
 
 class AnalysisResults(BaseModel):
     project_id: str
