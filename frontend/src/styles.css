@@ -673,3 +673,235 @@
 .file-item[data-type="git"] .file-header {
   border-left: 3px solid #795548;
 }
+
+/* Enhanced Visualization Styles */
+
+.visualization-container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.visualization-controls {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+  padding: 0.5rem;
+  background-color: #f8f9fa;
+  border-radius: 4px;
+}
+
+.view-selector {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.view-button {
+  background-color: #e9ecef;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: all 0.2s ease;
+}
+
+.view-button:hover {
+  background-color: #dee2e6;
+}
+
+.view-button.active {
+  background-color: #007bff;
+  color: white;
+}
+
+.filter-controls {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+/* Toggle switch */
+.toggle-switch {
+  position: relative;
+  display: inline-block;
+  width: 48px;
+  height: 24px;
+  margin-right: 8px;
+  vertical-align: middle;
+}
+
+.toggle-switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #ccc;
+  transition: .4s;
+  border-radius: 24px;
+}
+
+.slider:before {
+  position: absolute;
+  content: "";
+  height: 16px;
+  width: 16px;
+  left: 4px;
+  bottom: 4px;
+  background-color: white;
+  transition: .4s;
+  border-radius: 50%;
+}
+
+input:checked + .slider {
+  background-color: #2196F3;
+}
+
+input:checked + .slider:before {
+  transform: translateX(24px);
+}
+
+/* Visualization layout */
+.vis-flex-container {
+  display: flex;
+  height: 70vh;
+  border: 1px solid #dee2e6;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.vis-diagram-container {
+  flex: 3;
+  overflow: auto;
+  background-color: #f8f9fa;
+  position: relative;
+}
+
+.vis-details-panel {
+  flex: 1;
+  min-width: 250px;
+  max-width: 350px;
+  padding: 1rem;
+  background-color: white;
+  border-left: 1px solid #dee2e6;
+  overflow: auto;
+}
+
+/* Diagram SVGs */
+.flow-diagram-svg,
+.module-structure-svg,
+.class-hierarchy-svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+  background-color: #ffffff;
+}
+
+/* Node details panel */
+.node-details {
+  padding: 0.5rem;
+}
+
+.node-details h3 {
+  font-size: 1.2rem;
+  margin-bottom: 0.5rem;
+  color: #333;
+  border-bottom: 1px solid #dee2e6;
+  padding-bottom: 0.5rem;
+}
+
+.node-details h4 {
+  font-size: 1rem;
+  margin: 1rem 0 0.5rem;
+  color: #555;
+}
+
+.node-details p {
+  margin: 0.5rem 0;
+  font-size: 0.9rem;
+  line-height: 1.4;
+}
+
+.node-details strong {
+  color: #555;
+}
+
+/* Node and link appearance */
+.node {
+  cursor: pointer;
+}
+
+.node text {
+  pointer-events: none;
+  user-select: none;
+}
+
+.link {
+  transition: stroke-width 0.3s, opacity 0.3s;
+}
+
+/* Legend */
+.legend-container {
+  position: absolute;
+  bottom: 20px;
+  right: 20px;
+  background-color: rgba(255, 255, 255, 0.9);
+  border: 1px solid #dee2e6;
+  border-radius: 4px;
+  padding: 0.5rem;
+  z-index: 100;
+  font-size: 0.8rem;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  margin-bottom: 0.25rem;
+}
+
+.legend-color {
+  width: 15px;
+  height: 15px;
+  margin-right: 0.5rem;
+  border-radius: 3px;
+}
+
+/* Animation for transitions */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.node, .link {
+  animation: fadeIn 0.5s;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .vis-flex-container {
+    flex-direction: column;
+    height: auto;
+  }
+  
+  .vis-diagram-container {
+    height: 50vh;
+  }
+  
+  .vis-details-panel {
+    max-width: none;
+  }
+  
+  .visualization-controls {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+}
