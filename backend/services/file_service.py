@@ -9,6 +9,17 @@ from config import settings
 class FileService:
     """Service for handling file operations"""
     
+import os
+import shutil
+import tempfile
+import zipfile
+from typing import List, Optional
+from utils.exceptions import FileServiceError
+from config import settings
+
+class FileService:
+    """Service for handling file operations"""
+    
     def get_code_files(self, directory: str) -> List[str]:
         """
         Get all code and configuration files in a directory
@@ -21,11 +32,12 @@ class FileService:
         """
         all_files = []
         
-        # Code file extensions
+        # Code file extensions - expanded to include all supported languages
         code_extensions = (
             # Programming languages
             '.py', '.js', '.jsx', '.ts', '.tsx', '.java', '.c', '.cpp', '.cs', 
             '.go', '.rb', '.php', '.rs', '.swift', '.kt', '.scala', '.h', '.hpp',
+            '.cc', '.cxx', '.m', '.mm', '.pl', '.pm', '.t', '.lua', '.groovy',
             
             # Web
             '.html', '.htm', '.css', '.scss', '.less', '.svg', '.json', '.xml',
@@ -46,7 +58,9 @@ class FileService:
         # Special filenames to include (without extensions)
         special_files = (
             'dockerfile', 'docker-compose', '.gitignore', 'makefile', 'readme',
-            'requirements', 'setup', 'config', 'package.json', 'mydb', 'database'
+            'requirements', 'setup', 'config', 'package.json', 'mydb', 'database',
+            'gemfile', 'rakefile', 'procfile', 'gulpfile', 'gruntfile', 'webpack.config',
+            'tsconfig', 'eslintrc', 'prettierrc', 'babelrc', 'npmrc', 'yarnrc'
         )
         
         try:

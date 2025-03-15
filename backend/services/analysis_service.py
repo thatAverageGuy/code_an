@@ -2,11 +2,12 @@ import os
 import uuid
 from typing import Dict, List, Any, Optional
 from datetime import datetime
-
-from domain.analyzer import CodeAnalyzerStrategy, PythonAnalyzer
 from services.file_service import FileService
 from domain.entities import AnalysisResults, FileAnalysis
 from utils.exceptions import AnalysisError
+from domain.analyzer import (
+    JavaAnalyzer, GoAnalyzer, CppAnalyzer, CAnalyzer, JavaScriptAnalyzer, CodeAnalyzerStrategy, PythonAnalyzer
+)
 
 class AnalysisService:
     """
@@ -19,6 +20,19 @@ class AnalysisService:
         
         # Register default analyzers
         self.register_analyzer("py", PythonAnalyzer())
+        self.register_analyzer("java", JavaAnalyzer())
+        self.register_analyzer("go", GoAnalyzer())
+        self.register_analyzer("cpp", CppAnalyzer())
+        self.register_analyzer("cc", CppAnalyzer())
+        self.register_analyzer("cxx", CppAnalyzer())
+        self.register_analyzer("hpp", CppAnalyzer())
+        self.register_analyzer("h", CAnalyzer())
+        self.register_analyzer("c", CAnalyzer())
+        self.register_analyzer("js", JavaScriptAnalyzer())
+        self.register_analyzer("jsx", JavaScriptAnalyzer())
+        self.register_analyzer("ts", JavaScriptAnalyzer())
+        self.register_analyzer("tsx", JavaScriptAnalyzer())
+
     
     def register_analyzer(self, extension: str, analyzer: CodeAnalyzerStrategy):
         """Register a code analyzer for a specific file extension"""
@@ -216,25 +230,59 @@ class AnalysisService:
             
             # Analyze each file
             analysis_results = {}
+            error_files = []
+            
             for file_path in files:
-                extension = file_path.split('.')[-1].lower() if '.' in file_path else ''
-                content = self.file_service.read_file(file_path)
-                
-                # Use the registered analyzer if available, or create a basic analysis for other file types
-                if extension in self.analyzers:
-                    analyzer = self.analyzers[extension]
-                    analysis = analyzer.analyze(file_path, content)
-                else:
-                    # For files without registered analyzers, provide basic info
-                    analysis = {
+                try:
+                    extension = file_path.split('.')[-1].lower() if '.' in file_path else ''
+                    content = self.file_service.read_file(file_path)
+                    
+                    # Use the registered analyzer if available, or create a basic analysis for other file types
+                    if extension in self.analyzers:
+                        analyzer = self.analyzers[extension]
+                        analysis = analyzer.analyze(file_path, content)
+                        
+                        # Check if analysis returned an error
+                        if 'error' in analysis:
+                            error_message = f"Analysis error in {file_path}: {analysis['error']}"
+                            print(error_message)  # Log the error
+                            error_files.append(file_path)
+                            
+                            # Provide a basic structure even for error cases
+                            analysis = {
+                                'imports': {},
+                                'functions': {},
+                                'classes': {},
+                                'error': analysis['error']
+                            }
+                    else:
+                        # For files without registered analyzers, provide basic info
+                        analysis = {
+                            'imports': {},
+                            'functions': {},
+                            'classes': {},
+                        }
+                    
+                    # Add file summary
+                    analysis['summary'] = self.generate_file_summary(file_path, content)
+                    analysis_results[file_path] = analysis
+                    
+                except Exception as e:
+                    error_message = f"Error processing file {file_path}: {str(e)}"
+                    print(error_message)  # Log the error
+                    error_files.append(file_path)
+                    
+                    # Add a basic analysis with error information
+                    analysis_results[file_path] = {
                         'imports': {},
                         'functions': {},
                         'classes': {},
+                        'error': str(e),
+                        'summary': f"Error processing file: {str(e)}"
                     }
-                
-                # Add file summary
-                analysis['summary'] = self.generate_file_summary(file_path, content)
-                analysis_results[file_path] = analysis
+            
+            if error_files:
+                print(f"Completed analysis with errors in {len(error_files)} files")
             
             # Generate visualization data for the frontend
             visualization_data = self._prepare_visualization_data(analysis_results)
@@ -242,17 +290,25 @@ class AnalysisService:
             # Structure file analysis for response with normalized paths
             structured_analysis = {}
             for file_path, analysis in analysis_results.items():
-                normalized_path = self.normalize_path(file_path)
-                
-                # Create FileAnalysis with the normalized path
-                structured_analysis[normalized_path] = FileAnalysis(
-                    file_path=normalized_path,
-                    imports=analysis.get('imports', {}),
-                    functions=analysis.get('functions', {}),
-                    classes=analysis.get('classes', {}),
-                    errors=[analysis.get('error')] if 'error' in analysis else None,
-                    summary=analysis.get('summary', '')
-                )
+                try:
+                    normalized_path = self.normalize_path(file_path)
+                    
+                    errors = None
+                    if 'error' in analysis:
+                        errors = [analysis['error']]
+                    
+                    # Create FileAnalysis with the normalized path
+                    structured_analysis[normalized_path] = FileAnalysis(
+                        file_path=normalized_path,
+                        imports=analysis.get('imports', {}),
+                        functions=analysis.get('functions', {}),
+                        classes=analysis.get('classes', {}),
+                        errors=errors,
+                        summary=analysis.get('summary', '')
+                    )
+                except Exception as e:
+                    print(f"Error structuring analysis for {file_path}: {str(e)}")
+                    # Skip this file if it can't be properly structured
             
             # Create final results with raw data
             results = AnalysisResults(
@@ -266,6 +322,9 @@ class AnalysisService:
             return results
         
         except Exception as e:
+            import traceback
+            print(f"Error during project analysis: {str(e)}")
+            print(traceback.format_exc())  # Print the full traceback for debugging
             raise AnalysisError(f"Error during project analysis: {str(e)}")
 
     def _prepare_visualization_data(self, analysis_results: Dict[str, Any]) -> Dict[str, Any]:
@@ -278,166 +337,199 @@ class AnalysisService:
         Returns:
             Data structure for visualization
         """
-        nodes = []
-        links = []
-        node_map = {}
-        node_id = 0
-        
-        # Process each file's analysis
-        for file_path, analysis in analysis_results.items():
-            normalized_path = self.normalize_path(file_path)
-            file_name = os.path.basename(normalized_path)
+        try:
+            nodes = []
+            links = []
+            node_map = {}
+            node_id = 0
             
-            # Determine file type for visualization
-            extension = file_name.split('.')[-1].lower() if '.' in file_name else ''
-            file_type = self._get_file_type(file_name, extension)
-            
-            # Add file as node
-            nodes.append({
-                "id": node_id,
-                "name": file_name,
-                "path": normalized_path,
-                "type": "file",
-                "file_type": file_type,
-                "summary": analysis.get('summary', '')
-            })
-            file_node_id = node_id
-            node_map[file_path] = node_id
-            node_id += 1
-            
-            # Process functions
-            if 'functions' in analysis:
-                for func_name, details in analysis['functions'].items():
-                    # Add function node
+            # Process each file's analysis
+            for file_path, analysis in analysis_results.items():
+                try:
+                    normalized_path = self.normalize_path(file_path)
+                    file_name = os.path.basename(normalized_path)
+                    
+                    # Determine file type for visualization
+                    extension = file_name.split('.')[-1].lower() if '.' in file_name else ''
+                    file_type = self._get_file_type(file_name, extension)
+                    
+                    # Add file as node
                     nodes.append({
                         "id": node_id,
-                        "name": func_name,
+                        "name": file_name,
                         "path": normalized_path,
-                        "type": "function",
-                        "args": details.get('args', [])
+                        "type": "file",
+                        "file_type": file_type,
+                        "summary": analysis.get('summary', '')
                     })
-                    func_node_id = node_id
-                    node_map[f"{file_path}:{func_name}"] = node_id
+                    file_node_id = node_id
+                    node_map[file_path] = node_id
                     node_id += 1
                     
-                    # Add link from file to function
-                    links.append({
-                        "source": file_node_id,
-                        "target": func_node_id,
-                        "type": "contains"
-                    })
+                    # Process functions
+                    if 'functions' in analysis and analysis['functions']:
+                        for func_name, details in analysis['functions'].items():
+                            # Add function node
+                            nodes.append({
+                                "id": node_id,
+                                "name": func_name,
+                                "path": normalized_path,
+                                "type": "function",
+                                "args": details.get('args', [])
+                            })
+                            func_node_id = node_id
+                            node_map[f"{file_path}:{func_name}"] = node_id
+                            node_id += 1
+                            
+                            # Add link from file to function
+                            links.append({
+                                "source": file_node_id,
+                                "target": func_node_id,
+                                "type": "contains"
+                            })
+                            
+                            # Add function call links
+                            if 'calls' in details and details['calls']:
+                                for called_func in details['calls']:
+                                    if called_func:  # Ensure called_func is not None or empty
+                                        # We'll add these links in a second pass
+                                        # after all nodes are created
+                                        links.append({
+                                            "source": func_node_id,
+                                            "target": called_func,  # This is just the name, we'll process it later
+                                            "type": "calls",
+                                            "temp": True  # Mark as temporary
+                                        })
                     
-                    # Add function call links
-                    for called_func in details.get('calls', []):
-                        # We'll add these links in a second pass
-                        # after all nodes are created
-                        links.append({
-                            "source": func_node_id,
-                            "target": called_func,  # This is just the name, we'll process it later
-                            "type": "calls",
-                            "temp": True  # Mark as temporary
-                        })
+                    # Process classes
+                    if 'classes' in analysis and analysis['classes']:
+                        for class_name, details in analysis['classes'].items():
+                            # Add class node
+                            nodes.append({
+                                "id": node_id, 
+                                "name": class_name,
+                                "path": normalized_path,
+                                "type": "class",
+                                "methods": details.get('methods', []),
+                                "bases": details.get('bases', [])
+                            })
+                            class_node_id = node_id
+                            node_map[f"{file_path}:{class_name}"] = node_id
+                            node_id += 1
+                            
+                            # Add link from file to class
+                            links.append({
+                                "source": file_node_id,
+                                "target": class_node_id,
+                                "type": "contains"
+                            })
+                except Exception as e:
+                    print(f"Error processing file {file_path} for visualization: {str(e)}")
+                    # Continue with the next file
             
-            # Process classes
-            if 'classes' in analysis:
-                for class_name, details in analysis['classes'].items():
-                    # Add class node
-                    nodes.append({
-                        "id": node_id, 
-                        "name": class_name,
-                        "path": normalized_path,
-                        "type": "class",
-                        "methods": details.get('methods', []),
-                        "bases": details.get('bases', [])
-                    })
-                    class_node_id = node_id
-                    node_map[f"{file_path}:{class_name}"] = node_id
-                    node_id += 1
+            # Process function calls and class inheritance
+            # We need a second pass because now all nodes are created
+            actual_links = []
+            for link in links:
+                try:
+                    if link.get('temp', False):
+                        # This is a function call link, find the actual target
+                        source_node = nodes[link['source']]
+                        target_name = link['target']
+                        found = False
+                        
+                        if not target_name:  # Skip invalid targets
+                            continue
+                        
+                        # Try to find the target node
+                        for node in nodes:
+                            if node['type'] == 'function' and node['name'] == target_name:
+                                actual_links.append({
+                                    "source": link['source'],
+                                    "target": node['id'],
+                                    "type": "calls"
+                                })
+                                found = True
+                                break
+                        
+                        # If not found, keep the name for frontend processing
+                        if not found:
+                            actual_links.append({
+                                "source": link['source'],
+                                "target": f"unknown:{target_name}",
+                                "targetName": target_name,
+                                "type": "calls"
+                            })
+                    else:
+                        # Regular link, keep it
+                        actual_links.append(link)
+                except Exception as e:
+                    print(f"Error processing link {link}: {str(e)}")
+                    # Continue with the next link
+            
+            # Add module hierarchy with normalized paths
+            module_map = {}
+            for file_path in analysis_results.keys():
+                try:
+                    normalized_path = self.normalize_path(file_path)
+                    parts = normalized_path.split('/')
                     
-                    # Add link from file to class
-                    links.append({
-                        "source": file_node_id,
-                        "target": class_node_id,
-                        "type": "contains"
-                    })
-        
-        # Process function calls and class inheritance
-        # We need a second pass because now all nodes are created
-        actual_links = []
-        for link in links:
-            if link.get('temp', False):
-                # This is a function call link, find the actual target
-                source_node = nodes[link['source']]
-                target_name = link['target']
-                found = False
-                
-                # Try to find the target node
-                for node in nodes:
-                    if node['type'] == 'function' and node['name'] == target_name:
-                        actual_links.append({
-                            "source": link['source'],
-                            "target": node['id'],
-                            "type": "calls"
-                        })
-                        found = True
-                        break
-                
-                # If not found, keep the name for frontend processing
-                if not found:
-                    actual_links.append({
-                        "source": link['source'],
-                        "target": f"unknown:{target_name}",
-                        "targetName": target_name,
-                        "type": "calls"
-                    })
-            else:
-                # Regular link, keep it
-                actual_links.append(link)
-        
-        # Add module hierarchy with normalized paths
-        module_map = {}
-        for file_path in analysis_results.keys():
-            normalized_path = self.normalize_path(file_path)
-            parts = normalized_path.split('/')
-            # Build module hierarchy
-            current_path = ""
-            for i, part in enumerate(parts[:-1]):  # Skip the filename
-                parent_path = current_path
-                current_path = (current_path + "/" + part).lstrip("/")
-                
-                if current_path not in module_map:
-                    # Create module node
-                    nodes.append({
-                        "id": node_id,
-                        "name": part,
-                        "path": current_path,
-                        "type": "module"
-                    })
-                    module_map[current_path] = node_id
-                    node_id += 1
-                    
-                    # Link to parent module if exists
-                    if parent_path and parent_path in module_map:
-                        actual_links.append({
-                            "source": module_map[parent_path],
-                            "target": module_map[current_path],
-                            "type": "contains"
-                        })
-                
-                # Link module to file
-                if node_map.get(file_path) is not None:
-                    actual_links.append({
-                        "source": module_map[current_path],
-                        "target": node_map[file_path],
-                        "type": "contains"
-                    })
-        
-        return {
-            "nodes": nodes,
-            "links": actual_links,
-            "modules": list(module_map.keys())
-        }
-
+                    if not parts:  # Skip if path cannot be split properly
+                        continue
+                        
+                    # Build module hierarchy
+                    current_path = ""
+                    for i, part in enumerate(parts[:-1]):  # Skip the filename
+                        if not part:  # Skip empty parts
+                            continue
+                            
+                        parent_path = current_path
+                        current_path = (current_path + "/" + part).lstrip("/")
+                        
+                        if current_path not in module_map:
+                            # Create module node
+                            nodes.append({
+                                "id": node_id,
+                                "name": part,
+                                "path": current_path,
+                                "type": "module"
+                            })
+                            module_map[current_path] = node_id
+                            node_id += 1
+                            
+                            # Link to parent module if exists
+                            if parent_path and parent_path in module_map:
+                                actual_links.append({
+                                    "source": module_map[parent_path],
+                                    "target": module_map[current_path],
+                                    "type": "contains"
+                                })
+                        
+                        # Link module to file
+                        if node_map.get(file_path) is not None:
+                            actual_links.append({
+                                "source": module_map[current_path],
+                                "target": node_map[file_path],
+                                "type": "contains"
+                            })
+                except Exception as e:
+                    print(f"Error building module hierarchy for {file_path}: {str(e)}")
+                    # Continue with the next file
+            
+            return {
+                "nodes": nodes,
+                "links": actual_links,
+                "modules": list(module_map.keys())
+            }
+        except Exception as e:
+            print(f"Error preparing visualization data: {str(e)}")
+            # Return minimal valid structure to avoid breaking the frontend
+            return {
+                "nodes": [],
+                "links": [],
+                "modules": []
+            }
+    
     def _get_file_type(self, filename: str, extension: str) -> str:
         """
         Determine the type of file based on filename and extension
